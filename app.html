@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Robotvac Math - app</title>
+<link rel="stylesheet" href="https://unpkg.com/sakura.css/css/sakura.css">
+<style>
+  :root { --accent: #4a7a5a; }
+  h1 { color: var(--accent); margin-bottom: 0.2em; }
+  .tag { color: var(--accent); font-style: italic; }
+  .card { border: 1px solid #ddd; border-left: 4px solid var(--accent); padding: 1em 1.2em; margin: 1.2em 0; border-radius: 4px; }
+  .big { font-size: 1.2rem; font-weight: 700; color: var(--accent); margin-top: 0.8em; }
+  .err { color: #b00; font-weight: 700; }
+  label { display: block; margin-top: 0.6em; font-size: 0.9em; }
+  input, select { max-width: 12em; }
+  .foot { margin-top: 2.5em; font-size: 0.85em; color: #777; }
+</style>
+</head>
+<body>
+<h1>Robotvac Math</h1>
+<p class="tag">Run truth, coverage truth and bin truth - labeled norms, honest arithmetic.</p>
+
+<div class="card">
+  <h3>The run truth</h3>
+  <label for="r-volts">Pack volts</label>
+  <input id="r-volts" type="number" step="any" value="14.4">
+  <label for="r-mah">Pack milliamp-hours</label>
+  <input id="r-mah" type="number" step="any" value="5200">
+  <label for="r-watts">Suction watts (15 eco, 25 standard, 45 max)</label>
+  <input id="r-watts" type="number" step="any" value="25">
+  <label for="r-claim">Minutes the box claims</label>
+  <input id="r-claim" type="number" step="any" value="180">
+  <p class="big" id="r-out"></p>
+</div>
+
+<div class="card">
+  <h3>The coverage truth</h3>
+  <label for="c-min">Honest minutes per charge</label>
+  <input id="c-min" type="number" step="any" value="180">
+  <label for="c-pace">Pace (sqft per minute: 10 bump-nav, 14 mapped)</label>
+  <input id="c-pace" type="number" step="any" value="10">
+  <label for="c-claim">Square feet the box claims</label>
+  <input id="c-claim" type="number" step="any" value="1500">
+  <p class="big" id="c-out"></p>
+</div>
+
+<div class="card">
+  <h3>The bin truth</h3>
+  <label for="b-bin">Dustbin size (liters)</label>
+  <input id="b-bin" type="number" step="any" value="0.5">
+  <label for="b-sqft">House size (square feet)</label>
+  <input id="b-sqft" type="number" step="any" value="2000">
+  <label for="b-debris">Debris norm (mL per 1000 sqft daily: 15 tidy, 40 with a dog, 70 shedding)</label>
+  <input id="b-debris" type="number" step="any" value="70">
+  <p class="big" id="b-out"></p>
+</div>
+
+<p class="foot">The 0.7 revisit norm and the debris figures are labeled norms - the arithmetic is honest, and the dust bunny under the bed keeps the honest ledger.</p>
+
+<script src="engine.js"></script>
+<script>
+function g(id){ return document.getElementById(id); }
+function v(id){ var n = parseFloat(g(id).value); return isNaN(n) ? NaN : n; }
+function show(id, s, bad){ var el = g(id); el.textContent = s; el.className = bad ? "err big" : "big"; }
+
+function runRun(){
+  var args = [v("r-volts"), v("r-mah"), v("r-watts"), v("r-claim")];
+  var r = RobotvacMath.runPlan.apply(null, args);
+  if (r.error) return show("r-out", r.error, true);
+  show("r-out", RobotvacMath.renderRun.apply(null, [r].concat(args)), false);
+}
+function runCoverage(){
+  var args = [v("c-min"), v("c-pace"), v("c-claim")];
+  var r = RobotvacMath.coveragePlan.apply(null, args);
+  if (r.error) return show("c-out", r.error, true);
+  show("c-out", RobotvacMath.renderCoverage.apply(null, [r].concat(args)), false);
+}
+function runBin(){
+  var args = [v("b-bin"), v("b-sqft"), v("b-debris")];
+  var r = RobotvacMath.binPlan.apply(null, args);
+  if (r.error) return show("b-out", r.error, true);
+  show("b-out", RobotvacMath.renderBin.apply(null, [r].concat(args)), false);
+}
+["r-volts", "r-mah", "r-watts", "r-claim"].forEach(function(id){ g(id).addEventListener("input", runRun); });
+["c-min", "c-pace", "c-claim"].forEach(function(id){ g(id).addEventListener("input", runCoverage); });
+["b-bin", "b-sqft", "b-debris"].forEach(function(id){ g(id).addEventListener("input", runBin); });
+runRun(); runCoverage(); runBin();
+</script>
+</body>
+</html>
